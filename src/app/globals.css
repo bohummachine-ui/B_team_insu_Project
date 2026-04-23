@@ -1,27 +1,73 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F9FAFB;
+  --foreground: #191F28;
+  --sidebar-width: 240px;
+  --header-height: 60px;
+  --right-panel-width: 360px;
+  --right-panel-collapsed-width: 48px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 body {
-  color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1D6DB;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B0B8C1;
+}
+
+:focus-visible {
+  outline: 2px solid #3182F6;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white font-semibold rounded-toss px-6 py-3
+           hover:bg-primary-500 active:bg-primary-600
+           transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-800 font-semibold rounded-toss px-6 py-3
+           hover:bg-gray-200 active:bg-gray-300
+           transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply bg-white rounded-toss-lg shadow-toss p-6;
+  }
+
+  .input-field {
+    @apply w-full bg-gray-100 border-0 rounded-toss px-4 py-3 text-gray-900
+           placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:bg-white
+           transition-all duration-150;
   }
 }
