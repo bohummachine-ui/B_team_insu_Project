@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Sidebar from '@/components/layout/Sidebar'
 import RightPanel from '@/components/layout/RightPanel'
+import ShortcutProvider from '@/features/panel/components/ShortcutProvider'
 
 export default async function MainLayout({
   children,
@@ -35,6 +36,7 @@ export default async function MainLayout({
       </main>
 
       <RightPanel />
+      <ShortcutProvider />
     </div>
   )
 }

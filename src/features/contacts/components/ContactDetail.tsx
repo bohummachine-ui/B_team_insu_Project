@@ -8,6 +8,8 @@ import { calcAge } from '../utils/maskContact'
 import { useDeleteContact } from '../hooks/useContact'
 import ShareToggle from './ShareToggle'
 import InsuranceSlot from './InsuranceSlot'
+import ContactPdfButton from './ContactPdfButton'
+import { usePanelStore } from '@/store/panelStore'
 
 type Tab = 'current' | 'remodeling' | 'memo' | 'history' | 'files'
 
@@ -20,6 +22,7 @@ export default function ContactDetail({ contact, userRole }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('current')
   const del = useDeleteContact()
+  const openPanel = usePanelStore((s) => s.openPanel)
 
   const age = calcAge(contact.birthday)
 
@@ -41,6 +44,14 @@ export default function ContactDetail({ contact, userRole }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">{contact.name}</h1>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => openPanel('templates', { customerId: contact.id, customerName: contact.name })}
+            className="btn-secondary text-sm py-2 px-4"
+            title="단축키 ]"
+          >
+            카톡 자료
+          </button>
+          <ContactPdfButton contact={contact} />
           <Link
             href={`/contacts/${contact.id}/edit`}
             className="btn-secondary text-sm py-2 px-4"
