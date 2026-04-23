@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import NotifyButton from './NotifyButton'
 
 export default async function PendingPage() {
   const supabase = createServerSupabaseClient()
@@ -53,6 +54,8 @@ export default async function PendingPage() {
             <p>• 일반적으로 1 영업일 이내 승인됩니다</p>
             <p>• 문의사항은 팀장에게 연락해주세요</p>
           </div>
+
+          <NotifyButton />
         </div>
 
         <LogoutButton />

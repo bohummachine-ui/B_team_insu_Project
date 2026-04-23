@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useContacts } from '@/features/contacts/hooks/useContacts'
 import { useBulkContactShare } from '@/features/contacts/hooks/useContactShare'
 import ContactList from '@/features/contacts/components/ContactList'
 import ContactCard from '@/features/contacts/components/ContactCard'
+import { exportContactsAsCsv, exportContactsAsVcf } from '@/features/contacts/utils/exportContacts'
 
 type ViewMode = 'list' | 'card'
 
@@ -17,6 +18,24 @@ export default function ContactsPage() {
 
   const { data: contacts = [], isLoading } = useContacts({ search, isShared })
   const bulkShare = useBulkContactShare()
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const selectedContacts = () =>
+    selectedIds.size > 0
+      ? contacts.filter((c) => selectedIds.has(c.id))
+      : contacts
 
   const handleSelect = (id: string, checked: boolean) => {
     const next = new Set(selectedIds)
@@ -47,10 +66,11 @@ export default function ContactsPage() {
       <div className="card mb-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[240px]">
           <input
+            ref={searchRef}
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="이름·전화·메모 검색..."
+            placeholder="이름·전화·메모 검색... (Ctrl+K)"
             className="input-field"
           />
         </div>
@@ -67,6 +87,25 @@ export default function ContactsPage() {
           <option value="private">🔒 비공개</option>
           <option value="shared">🌐 공개</option>
         </select>
+
+        <div className="flex gap-1">
+          <button
+            onClick={() => exportContactsAsCsv(selectedContacts())}
+            disabled={contacts.length === 0}
+            className="text-sm px-3 py-1.5 rounded-toss border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            title={selectedIds.size > 0 ? `선택 ${selectedIds.size}명 CSV` : '전체 CSV'}
+          >
+            CSV
+          </button>
+          <button
+            onClick={() => exportContactsAsVcf(selectedContacts())}
+            disabled={contacts.length === 0}
+            className="text-sm px-3 py-1.5 rounded-toss border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            title={selectedIds.size > 0 ? `선택 ${selectedIds.size}명 VCF` : '전체 VCF'}
+          >
+            VCF
+          </button>
+        </div>
 
         <div className="flex gap-1 bg-gray-100 rounded-toss p-1">
           <button

@@ -3,7 +3,7 @@
 // Design Ref: §5.4 게시판 (공지/자유/사례공유/Q&A 4탭)
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePosts, useBoardRealtime } from '../hooks/useBoard'
+import { usePosts, useBoardRealtime, useUpdatePost } from '../hooks/useBoard'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { POST_CATEGORY_LABEL, POST_CATEGORY_ORDER, type PostCategory } from '@/types'
 import PostEditor from './PostEditor'
@@ -22,6 +22,13 @@ export default function BoardPage() {
   const [showEditor, setShowEditor] = useState(false)
 
   useBoardRealtime()
+  const updatePost = useUpdatePost()
+
+  const handleTogglePin = (e: React.MouseEvent, postId: string, current: boolean) => {
+    e.preventDefault()
+    e.stopPropagation()
+    updatePost.mutate({ postId, patch: { is_pinned: !current } })
+  }
 
   const { data: posts, isLoading } = usePosts({
     category: tab === 'all' ? undefined : tab,
@@ -85,10 +92,25 @@ export default function BoardPage() {
                 href={`/board/${p.id}`}
                 className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
               >
-                {p.is_pinned && (
-                  <span className="mt-1 px-1.5 py-0.5 rounded bg-red-50 text-red-600 text-xs font-bold">
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    onClick={(e) => handleTogglePin(e, p.id, p.is_pinned)}
+                    className={`mt-1 w-6 h-6 flex items-center justify-center rounded text-xs transition-colors ${
+                      p.is_pinned
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                        : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500'
+                    }`}
+                    title={p.is_pinned ? '고정 해제' : '상단 고정'}
+                  >
                     📌
-                  </span>
+                  </button>
+                ) : (
+                  p.is_pinned && (
+                    <span className="mt-1 px-1.5 py-0.5 rounded bg-red-50 text-red-600 text-xs font-bold">
+                      📌
+                    </span>
+                  )
                 )}
                 <span
                   className={`mt-1 px-2 py-0.5 rounded text-xs font-medium ${

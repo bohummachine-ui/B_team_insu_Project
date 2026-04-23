@@ -9,6 +9,7 @@ import { useDeleteContact } from '../hooks/useContact'
 import ShareToggle from './ShareToggle'
 import InsuranceSlot from './InsuranceSlot'
 import ContactPdfButton from './ContactPdfButton'
+import MaskingPreview from './MaskingPreview'
 import { usePanelStore } from '@/store/panelStore'
 
 type Tab = 'current' | 'remodeling' | 'memo' | 'history' | 'files'
@@ -21,6 +22,7 @@ interface Props {
 export default function ContactDetail({ contact, userRole }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('current')
+  const [showMaskPreview, setShowMaskPreview] = useState(false)
   const del = useDeleteContact()
   const openPanel = usePanelStore((s) => s.openPanel)
 
@@ -50,6 +52,13 @@ export default function ContactDetail({ contact, userRole }: Props) {
             title="단축키 ]"
           >
             카톡 자료
+          </button>
+          <button
+            onClick={() => setShowMaskPreview(true)}
+            className="btn-secondary text-sm py-2 px-4"
+            title="타팀원에게 보이는 모습"
+          >
+            공개 미리보기
           </button>
           <ContactPdfButton contact={contact} />
           <Link
@@ -159,17 +168,38 @@ export default function ContactDetail({ contact, userRole }: Props) {
             </div>
           )}
           {tab === 'history' && (
-            <div className="card text-center py-16 text-gray-400 text-sm">
-              히스토리 기능은 추후 모듈에서 구현됩니다
+            <div className="card">
+              <p className="text-sm text-gray-700 font-medium mb-2">히스토리 (v1.1 예정)</p>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                고객 정보 변경 이력과 상담 기록 타임라인은 다음 버전(v1.1)에서 제공됩니다.<br />
+                현재는 <strong>상담 메모</strong> 탭에서 기록을 관리해주세요.
+              </p>
+              <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400">
+                · 수정 이력은 Supabase audit log에서 조회 가능합니다 (팀장 한정).
+              </div>
             </div>
           )}
           {tab === 'files' && (
-            <div className="card text-center py-16 text-gray-400 text-sm">
-              Google Drive 연동은 module-3에서 구현됩니다
+            <div className="card">
+              <p className="text-sm text-gray-700 font-medium mb-2">파일·증권 (v1.1 예정)</p>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Google Drive 연동으로 녹음본/증권/약관 업로드는 v1.1에서 제공됩니다.<br />
+                현재는 <strong>자료실 → 녹음본</strong>에서 Drive 링크를 수동으로 연결해주세요.
+              </p>
+              <Link
+                href="/library"
+                className="inline-block mt-4 text-sm text-primary hover:underline"
+              >
+                자료실로 이동 →
+              </Link>
             </div>
           )}
         </div>
       </div>
+
+      {showMaskPreview && (
+        <MaskingPreview contact={contact} onClose={() => setShowMaskPreview(false)} />
+      )}
     </div>
   )
 }
