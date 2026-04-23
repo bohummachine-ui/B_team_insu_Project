@@ -3,13 +3,21 @@
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useAttendanceStore } from '@/store/attendanceStore'
 import { ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR } from '@/types/attendance'
+import { useTodayAttendance } from '@/features/attendance/hooks/useAttendance'
 import AttendanceModal from './AttendanceModal'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function Header() {
   const { user } = useAuth()
-  const { currentStatus } = useAttendanceStore()
+  const { currentStatus, setStatus } = useAttendanceStore()
+  const { data: today } = useTodayAttendance()
   const [showAttendance, setShowAttendance] = useState(false)
+
+  useEffect(() => {
+    if (today?.status && today.status !== currentStatus) {
+      setStatus(today.status)
+    }
+  }, [today, currentStatus, setStatus])
 
   const statusColor = currentStatus ? ATTENDANCE_STATUS_COLOR[currentStatus] : 'bg-gray-300'
   const statusLabel = currentStatus ? ATTENDANCE_STATUS_LABEL[currentStatus] : '미설정'
