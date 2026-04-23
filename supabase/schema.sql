@@ -526,6 +526,36 @@ SELECT '백지운 지점'
 WHERE NOT EXISTS (SELECT 1 FROM teams LIMIT 1);
 
 -- ============================================================
+-- 9. Storage 버킷 & 정책
+-- ============================================================
+
+-- library-images 버킷
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('library-images', 'library-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "library_images_upload" ON storage.objects;
+CREATE POLICY "library_images_upload" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'library-images'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+DROP POLICY IF EXISTS "library_images_select" ON storage.objects;
+CREATE POLICY "library_images_select" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'library-images');
+
+DROP POLICY IF EXISTS "library_images_delete" ON storage.objects;
+CREATE POLICY "library_images_delete" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'library-images'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- ============================================================
 -- 완료! 다음 단계:
 -- 1) bohummachine@gmail.com 으로 Vercel 앱에서 Google 로그인
 -- 2) 아래 promote-admin.sql 실행해서 팀장 승격

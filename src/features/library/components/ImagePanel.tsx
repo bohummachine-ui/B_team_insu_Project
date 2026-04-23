@@ -20,7 +20,8 @@ export default function ImagePanel() {
   const { data, isLoading } = useImageAssets({ search: search || undefined })
   const { data: usage } = useImageUsage()
   const setShared = useSetImageShared()
-  const upload = useUploadImage()
+  const [progress, setProgress] = useState(0)
+  const upload = useUploadImage((p) => setProgress(p))
   const fileInput = useRef<HTMLInputElement>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -28,6 +29,7 @@ export default function ImagePanel() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadError(null)
+    setProgress(0)
     const title = prompt('이미지 제목', file.name.replace(/\.[^.]+$/, ''))
     if (!title) {
       if (fileInput.current) fileInput.current.value = ''
@@ -39,6 +41,7 @@ export default function ImagePanel() {
       setUploadError(err instanceof Error ? err.message : '업로드 실패')
     } finally {
       if (fileInput.current) fileInput.current.value = ''
+      setTimeout(() => setProgress(0), 1000)
     }
   }
 
@@ -75,6 +78,20 @@ export default function ImagePanel() {
             }}
           />
         </div>
+        {upload.isPending && (
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>{progress < 65 ? '압축 중...' : progress < 90 ? '업로드 중...' : '저장 중...'}</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-100 h-1.5 rounded overflow-hidden">
+              <div
+                className="bg-primary h-1.5 rounded transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
         {uploadError && (
           <p className="text-sm text-red-500 mt-2">{uploadError}</p>
         )}

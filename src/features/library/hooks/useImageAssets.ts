@@ -20,11 +20,11 @@ export function useImageUsage() {
   })
 }
 
-export function useUploadImage() {
+export function useUploadImage(onProgress?: (percent: number) => void) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: Parameters<typeof imageAssetService.upload>[0]) =>
-      imageAssetService.upload(input),
+      imageAssetService.upload(input, onProgress),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [KEY] })
     },

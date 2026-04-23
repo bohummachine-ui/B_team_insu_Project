@@ -1,9 +1,17 @@
 // Design Ref: §5 — Image Assets + Supabase Storage 업로드 (Plan FR-12)
+import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
 import { getOwnerContext } from './libraryHelpers'
 import { validateImageFile, validateImageCount } from '../utils/imageValidation'
 import { IMAGE_LIMITS } from '@/types'
 import type { ImageAsset, ImageAssetUpdate } from '@/types'
+
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 1,
+  maxWidthOrHeight: 1920,
+  useWebWorker: true,
+  fileType: 'image/jpeg',
+} as const
 
 const BUCKET = 'library-images'
 
@@ -75,8 +83,11 @@ export const imageAssetService = {
     }
   },
 
-  // Plan FR-12: 2MB/20장 제한 검증 후 Storage 업로드 + DB insert
-  async upload(input: ImageUploadInput): Promise<ImageAsset> {
+  // Plan FR-12: 압축(1MB/1920px) → Storage 업로드 → DB insert
+  async upload(
+    input: ImageUploadInput,
+    onProgress?: (percent: number) => void,
+  ): Promise<ImageAsset> {
     const fileCheck = validateImageFile(input.file)
     if (!fileCheck.ok) throw new Error(fileCheck.error)
 
@@ -90,16 +101,22 @@ export const imageAssetService = {
     const countCheck = validateImageCount(count ?? 0)
     if (!countCheck.ok) throw new Error(countCheck.error)
 
-    const ext = input.file.name.split('.').pop() ?? 'bin'
-    const storagePath = `${userId}/${crypto.randomUUID()}.${ext}`
+    onProgress?.(5)
+    const compressed = await imageCompression(input.file, {
+      ...COMPRESSION_OPTIONS,
+      onProgress: (p) => onProgress?.(5 + Math.round(p * 0.6)),
+    })
+    onProgress?.(65)
 
+    const storagePath = `${userId}/${crypto.randomUUID()}.jpg`
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
-      .upload(storagePath, input.file, {
-        contentType: input.file.type,
+      .upload(storagePath, compressed, {
+        contentType: 'image/jpeg',
         upsert: false,
       })
     if (upErr) throw upErr
+    onProgress?.(90)
 
     const { data, error } = await supabase
       .from('image_assets')
@@ -110,7 +127,7 @@ export const imageAssetService = {
         tags: input.tags ?? null,
         storage_path: storagePath,
         thumbnail_path: null,
-        file_size: input.file.size,
+        file_size: compressed.size,
         is_shared: input.isShared ?? false,
       })
       .select()
@@ -119,6 +136,7 @@ export const imageAssetService = {
       await supabase.storage.from(BUCKET).remove([storagePath])
       throw error
     }
+    onProgress?.(100)
     return data
   },
 
