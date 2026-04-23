@@ -16,9 +16,11 @@ export default function LoginForm() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/api/auth/callback`,
+        // Design Ref: team-crm-drive.design.md §4.3 — drive.file scope + refresh_token
+        scopes: 'https://www.googleapis.com/auth/drive.file',
         queryParams: {
           access_type: 'offline',
-          prompt: 'select_account',
+          prompt: 'consent',
         },
       },
     })
