@@ -10,9 +10,9 @@ export function validateImageFile(file: File): ImageValidationResult {
   if (!file.type.startsWith('image/')) {
     return { ok: false, error: '이미지 파일만 업로드 가능합니다' }
   }
-  if (file.size > IMAGE_LIMITS.MAX_FILE_SIZE) {
-    const mb = (file.size / (1024 * 1024)).toFixed(2)
-    return { ok: false, error: `파일 크기가 너무 큽니다 (${mb}MB, 최대 2MB)` }
+  if (file.size > IMAGE_LIMITS.MAX_INPUT_SIZE) {
+    const mb = (file.size / (1024 * 1024)).toFixed(1)
+    return { ok: false, error: `파일 크기가 너무 큽니다 (${mb}MB, 최대 20MB)` }
   }
   return { ok: true }
 }

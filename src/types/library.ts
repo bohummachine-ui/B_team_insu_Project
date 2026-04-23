@@ -27,8 +27,11 @@ export type PersonalMemoUpdate = Database['public']['Tables']['personal_memos'][
 export type LibraryTab = 'scripts' | 'templates' | 'images' | 'recordings' | 'cases' | 'memos'
 
 // Design §5 — 이미지 제한 (Plan FR-12)
+// MAX_INPUT_SIZE: 압축 전 원본 허용 한도 (browser-image-compression이 1MB로 압축)
+// MAX_FILE_SIZE: 압축 후 저장 기준 (usage 계산용)
 export const IMAGE_LIMITS = {
-  MAX_FILE_SIZE: 2 * 1024 * 1024, // 2MB
+  MAX_INPUT_SIZE: 20 * 1024 * 1024, // 20MB (압축 전 원본)
+  MAX_FILE_SIZE: 2 * 1024 * 1024,   // 2MB (압축 후 기준, usage 표시용)
   MAX_PER_USER: 20,
 } as const
 
