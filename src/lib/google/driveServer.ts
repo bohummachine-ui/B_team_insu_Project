@@ -170,9 +170,25 @@ export async function uploadFile(input: UploadFileInput): Promise<UploadFileResu
         fields: 'id, webViewLink',
       })
 
+      const fileId = res.data.id!
+
+      // D안: anyone-with-link reader 권한 부여.
+      // 이유: Drive preview 페이지는 파일이 공개가 아니면 frame-ancestors CSP로 외부 iframe을 차단한다.
+      // 링크는 DB에만 저장되고 UI에는 노출되지 않으므로 실질 접근은 앱 인증된 팀원으로 제한된다.
+      // 권한 부여 실패는 업로드 자체를 실패시키지 않는다(로그만 남김).
+      try {
+        await drive.permissions.create({
+          fileId,
+          requestBody: { role: 'reader', type: 'anyone' },
+          // supportsAllDrives: false (개인 Drive만 사용 중)
+        })
+      } catch (permErr) {
+        console.warn('[driveServer] permissions.create failed (iframe preview may not work)', permErr)
+      }
+
       return {
-        fileId: res.data.id!,
-        webViewLink: res.data.webViewLink ?? `https://drive.google.com/file/d/${res.data.id}/view`,
+        fileId,
+        webViewLink: res.data.webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`,
       }
     } catch (err: unknown) {
       lastError = err
