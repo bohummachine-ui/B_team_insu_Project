@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useTemplates } from '@/features/library/hooks/useTemplates'
+import { useOrderedTemplates } from '@/features/library/hooks/useTemplates'
 import { templateService } from '@/features/library/services'
 import { TEMPLATE_CATEGORY_LABEL } from '@/types'
 import type { TemplateCategory } from '@/types/database.types'
@@ -26,7 +26,7 @@ export default function TemplatesTab() {
   const { targetCustomerName, targetCustomerVars } = usePanelStore()
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [search, setSearch] = useState('')
-  const { data: templates = [], isLoading } = useTemplates({
+  const { data: templates = [], isLoading } = useOrderedTemplates({
     category: category === 'all' ? null : category,
     search: search || undefined,
   })

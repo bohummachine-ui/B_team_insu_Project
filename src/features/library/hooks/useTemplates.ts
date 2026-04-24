@@ -1,8 +1,10 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { templateService, type TemplateListFilter } from '../services'
 import type { MessageTemplateUpdate } from '@/types'
+import { useTemplateOrderStore } from '@/store/templateOrderStore'
 
 const KEY = 'library-templates'
 
@@ -11,6 +13,27 @@ export function useTemplates(filter: TemplateListFilter = {}) {
     queryKey: [KEY, 'list', filter],
     queryFn: () => templateService.list(filter),
   })
+}
+
+/** 저장된 순서를 적용한 템플릿 목록 (TemplatePanel / TemplatesTab 공용) */
+export function useOrderedTemplates(filter: TemplateListFilter = {}) {
+  const { data: templates = [], ...rest } = useTemplates(filter)
+  const orderedIds = useTemplateOrderStore((s) => s.orderedIds)
+
+  const ordered = useMemo(() => {
+    if (orderedIds.length === 0) return templates
+    const map = new Map(templates.map((t) => [t.id, t]))
+    const result = orderedIds.flatMap((id) => {
+      const t = map.get(id)
+      if (t) { map.delete(id); return [t] }
+      return []
+    })
+    // 순서 목록에 없는 신규 템플릿은 끝에 추가
+    map.forEach((t) => result.push(t))
+    return result
+  }, [templates, orderedIds])
+
+  return { data: ordered, ...rest }
 }
 
 export function useTemplate(id: string | undefined) {
