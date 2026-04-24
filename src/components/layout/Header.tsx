@@ -12,12 +12,9 @@ export default function Header() {
       className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-100"
       style={{ height: 'var(--header-height)' }}
     >
-      <div className="flex items-center justify-between h-full px-6">
+      <div className="flex items-center justify-between h-full pl-6 pr-6">
         <div className="flex items-center gap-3">
-          <span
-            className="font-bold text-gray-900 text-base"
-            style={{ marginLeft: 'var(--sidebar-width)' }}
-          >
+          <span className="font-bold text-gray-900 text-base">
             백지운지점 CRM
           </span>
         </div>

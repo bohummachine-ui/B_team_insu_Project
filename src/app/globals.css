@@ -7,7 +7,8 @@
 :root {
   --background: #F9FAFB;
   --foreground: #191F28;
-  --sidebar-width: 240px;
+  --sidebar-width: 64px;
+  --sidebar-expanded-width: 240px;
   --header-height: 60px;
   --right-panel-width: 360px;
   --right-panel-collapsed-width: 48px;
