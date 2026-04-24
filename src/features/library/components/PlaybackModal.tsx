@@ -1,15 +1,42 @@
 // Design Ref: §5.4 — Drive iframe 재생 모달 (autoplay 금지)
+// D안: 모달 오픈 시 Drive 파일 권한을 anyone-with-link reader로 보장 (idempotent backfill).
 'use client'
 
+import { useEffect, useState } from 'react'
+
 interface Props {
+  recordingId: string
   title: string
   driveFileId: string
   onClose: () => void
 }
 
-export default function PlaybackModal({ title, driveFileId, onClose }: Props) {
+export default function PlaybackModal({ recordingId, title, driveFileId, onClose }: Props) {
+  const [publicReady, setPublicReady] = useState(false)
+  const [shareError, setShareError] = useState<string | null>(null)
   const previewUrl = `https://drive.google.com/file/d/${encodeURIComponent(driveFileId)}/preview`
   const openInNewTab = `https://drive.google.com/file/d/${encodeURIComponent(driveFileId)}/view`
+
+  useEffect(() => {
+    // Drive 파일이 비공개면 iframe preview가 CSP로 차단되므로
+    // 최초 재생 시 anyone-with-link reader 권한을 확보한다.
+    // 이미 공개 상태여도 Drive는 200으로 받아줌(idempotent).
+    let cancelled = false
+    fetch(`/api/recordings/${recordingId}/share-public`, { method: 'POST' })
+      .then(async (res) => {
+        if (cancelled) return
+        if (res.ok) {
+          setPublicReady(true)
+        } else {
+          const { error } = await res.json().catch(() => ({ error: 'failed' }))
+          setShareError(error || `failed_${res.status}`)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setShareError(String(err))
+      })
+    return () => { cancelled = true }
+  }, [recordingId])
 
   return (
     <div

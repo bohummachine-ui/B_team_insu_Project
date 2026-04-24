@@ -1,5 +1,9 @@
-// Design Ref: team-crm-drive.design.md §5.3 — useUploadRecording (XHR + onprogress)
+// Design Ref: recording-stt — Client-direct Drive upload (Vercel 4.5MB 리밋 우회)
 // Plan SC-4: 진행률 UI 0-100%
+// 흐름:
+//   1) POST /api/drive/upload-init → { accessToken, folderId }
+//   2) XHR multipart → https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart
+//   3) POST /api/recordings/register → DB insert + 권한 부여 + STT trigger
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -13,25 +17,62 @@ export interface UploadInput {
 }
 
 interface UploadState {
-  progress: number // 0-100
+  progress: number
   sentBytes: number
   totalBytes: number
 }
 
 const INITIAL_STATE: UploadState = { progress: 0, sentBytes: 0, totalBytes: 0 }
 
-function uploadWithProgress(
-  input: UploadInput,
+async function initUpload(customerName: string): Promise<{ accessToken: string; folderId: string }> {
+  const res = await fetch('/api/drive/upload-init', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customerName }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw {
+      error: (body.error as DriveUploadError['error']) || 'upload_failed',
+      message: body.message || `init_failed_${res.status}`,
+    } as DriveUploadError
+  }
+  return res.json()
+}
+
+function uploadDirectToDrive(
+  file: File,
+  accessToken: string,
+  folderId: string,
   onProgress: (s: UploadState) => void
-): Promise<DriveUploadResult> {
+): Promise<{ id: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
-    const form = new FormData()
-    form.append('file', input.file)
-    form.append('customerId', input.customerId)
-    form.append('customerName', input.customerName)
+    const boundary = '----bteamcrm' + Math.random().toString(36).slice(2)
+    const metadata = {
+      name: file.name,
+      parents: [folderId],
+      mimeType: file.type || 'application/octet-stream',
+    }
+
+    // Drive multipart body: metadata part + file part (binary via Blob concat).
+    const encoder = new TextEncoder()
+    const head = encoder.encode(
+      `--${boundary}\r\n` +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) +
+        `\r\n--${boundary}\r\n` +
+        `Content-Type: ${metadata.mimeType}\r\n\r\n`
+    )
+    const tail = encoder.encode(`\r\n--${boundary}--`)
+    const blob = new Blob([head, file, tail], { type: `multipart/related; boundary=${boundary}` })
 
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', '/api/drive/upload')
+    xhr.open(
+      'POST',
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,mimeType'
+    )
+    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)
+    xhr.setRequestHeader('Content-Type', `multipart/related; boundary=${boundary}`)
 
     xhr.upload.addEventListener('progress', (e) => {
       if (!e.lengthComputable) return
@@ -44,22 +85,60 @@ function uploadWithProgress(
 
     xhr.addEventListener('load', () => {
       try {
-        const body = JSON.parse(xhr.responseText || '{}')
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(body as DriveUploadResult)
+          const body = JSON.parse(xhr.responseText || '{}')
+          resolve({ id: body.id, mimeType: body.mimeType || metadata.mimeType })
         } else {
-          reject(body as DriveUploadError)
+          reject({ error: 'upload_failed', message: `drive_${xhr.status}` } as DriveUploadError)
         }
       } catch {
-        reject({ error: 'upload_failed', message: '서버 응답 파싱 실패' } as DriveUploadError)
+        reject({ error: 'upload_failed', message: 'parse_failed' } as DriveUploadError)
       }
     })
-
     xhr.addEventListener('error', () => {
       reject({ error: 'upload_failed', message: '네트워크 오류' } as DriveUploadError)
     })
+    xhr.send(blob)
+  })
+}
 
-    xhr.send(form)
+async function registerRecording(params: {
+  driveFileId: string
+  fileName: string
+  mimeType: string
+  sizeBytes: number
+  customerId: string
+  customerName: string
+}): Promise<DriveUploadResult> {
+  const res = await fetch('/api/recordings/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...params, consentConfirmed: true }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw {
+      error: (body.error as DriveUploadError['error']) || 'upload_failed',
+      message: body.message || `register_failed_${res.status}`,
+    } as DriveUploadError
+  }
+  return res.json()
+}
+
+async function runUpload(
+  input: UploadInput,
+  setState: (s: UploadState) => void
+): Promise<DriveUploadResult> {
+  setState({ progress: 0, sentBytes: 0, totalBytes: input.file.size })
+  const { accessToken, folderId } = await initUpload(input.customerName)
+  const uploaded = await uploadDirectToDrive(input.file, accessToken, folderId, setState)
+  return registerRecording({
+    driveFileId: uploaded.id,
+    fileName: input.file.name,
+    mimeType: uploaded.mimeType,
+    sizeBytes: input.file.size,
+    customerId: input.customerId,
+    customerName: input.customerName,
   })
 }
 
@@ -70,12 +149,10 @@ export function useUploadRecording() {
   const reset = useCallback(() => setState(INITIAL_STATE), [])
 
   const mutation = useMutation<DriveUploadResult, DriveUploadError, UploadInput>({
-    mutationFn: (input) => uploadWithProgress(input, setState),
+    mutationFn: (input) => runUpload(input, setState),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recordings'] })
-    },
-    onSettled: () => {
-      // keep final progress visible briefly before reset via caller
+      qc.invalidateQueries({ queryKey: ['library-recordings'] })
     },
   })
 

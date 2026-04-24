@@ -110,6 +110,7 @@ export default function RecordingCard({
 
       {showPlayback && recording.drive_file_id && (
         <PlaybackModal
+          recordingId={recording.id}
           title={recording.title}
           driveFileId={recording.drive_file_id}
           onClose={() => setShowPlayback(false)}
