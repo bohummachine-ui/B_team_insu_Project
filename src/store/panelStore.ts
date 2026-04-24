@@ -35,22 +35,22 @@ export const usePanelStore = create<PanelState>((set, get) => ({
   targetCustomerName: undefined,
   targetCustomerVars: undefined,
   openPanel: (mode, opts) =>
-    set({
+    set((state) => ({
       isOpen: true,
       mode,
-      targetCustomerId: opts?.customerId,
-      targetCustomerName: opts?.customerName,
-      targetCustomerVars: opts?.customerVars,
-    }),
+      // opts에 명시적으로 전달된 경우만 덮어쓰기, 없으면 기존 값 유지
+      // (] 키 / 노란 버튼으로 열 때 setCustomerContext가 세팅한 값을 보존)
+      targetCustomerId: opts?.customerId ?? state.targetCustomerId,
+      targetCustomerName: opts?.customerName ?? state.targetCustomerName,
+      targetCustomerVars: opts?.customerVars ?? state.targetCustomerVars,
+    })),
+  // closePanel: isOpen/mode만 초기화 — 고객 context는 유지 (고객 페이지 이탈 시 clearCustomerContext가 처리)
   closePanel: () =>
-    set({ isOpen: false, mode: null, targetCustomerId: undefined, targetCustomerName: undefined, targetCustomerVars: undefined }),
+    set({ isOpen: false, mode: null }),
   togglePanel: () => {
     const { isOpen, mode } = get()
-    if (isOpen) {
-      set({ isOpen: false, mode: null, targetCustomerId: undefined, targetCustomerName: undefined, targetCustomerVars: undefined })
-    } else {
-      set({ isOpen: true, mode: mode ?? 'templates' })
-    }
+    // isOpen 토글만 — 고객 context는 건드리지 않음
+    set({ isOpen: !isOpen, mode: isOpen ? null : (mode ?? 'templates') })
   },
   setMode: (mode) => set({ mode }),
   setCustomerContext: (vars, customerId) =>
