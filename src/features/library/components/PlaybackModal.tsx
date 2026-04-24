@@ -2,7 +2,7 @@
 // D안: 모달 오픈 시 Drive 파일 권한을 anyone-with-link reader로 보장 (idempotent backfill).
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 interface Props {
   recordingId: string
@@ -12,30 +12,16 @@ interface Props {
 }
 
 export default function PlaybackModal({ recordingId, title, driveFileId, onClose }: Props) {
-  const [publicReady, setPublicReady] = useState(false)
-  const [shareError, setShareError] = useState<string | null>(null)
   const previewUrl = `https://drive.google.com/file/d/${encodeURIComponent(driveFileId)}/preview`
   const openInNewTab = `https://drive.google.com/file/d/${encodeURIComponent(driveFileId)}/view`
 
   useEffect(() => {
     // Drive 파일이 비공개면 iframe preview가 CSP로 차단되므로
-    // 최초 재생 시 anyone-with-link reader 권한을 확보한다.
-    // 이미 공개 상태여도 Drive는 200으로 받아줌(idempotent).
-    let cancelled = false
-    fetch(`/api/recordings/${recordingId}/share-public`, { method: 'POST' })
-      .then(async (res) => {
-        if (cancelled) return
-        if (res.ok) {
-          setPublicReady(true)
-        } else {
-          const { error } = await res.json().catch(() => ({ error: 'failed' }))
-          setShareError(error || `failed_${res.status}`)
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setShareError(String(err))
-      })
-    return () => { cancelled = true }
+    // 최초 재생 시 anyone-with-link reader 권한을 확보한다(idempotent backfill).
+    // 실패해도 UI는 iframe을 그대로 렌더 — 이미 권한이 있거나 네트워크 일시 이슈일 수 있음.
+    fetch(`/api/recordings/${recordingId}/share-public`, { method: 'POST' }).catch((err) => {
+      console.warn('[PlaybackModal] share-public failed', err)
+    })
   }, [recordingId])
 
   return (
