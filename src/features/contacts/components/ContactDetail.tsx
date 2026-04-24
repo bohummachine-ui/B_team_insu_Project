@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ContactWithLabels } from '@/types'
@@ -25,8 +25,29 @@ export default function ContactDetail({ contact, userRole }: Props) {
   const [showMaskPreview, setShowMaskPreview] = useState(false)
   const del = useDeleteContact()
   const openPanel = usePanelStore((s) => s.openPanel)
+  const setCustomerContext = usePanelStore((s) => s.setCustomerContext)
+  const clearCustomerContext = usePanelStore((s) => s.clearCustomerContext)
 
   const age = calcAge(contact.birthday)
+
+  // 고객 상세 페이지 진입 즉시 store에 고객 정보 세팅
+  // → ] 키나 노란 버튼으로 열어도 변수 치환이 동작함
+  useEffect(() => {
+    setCustomerContext(
+      {
+        name: contact.name,
+        age: calcAge(contact.birthday),
+        job: contact.job ?? null,
+        jobDetail: contact.job_detail ?? null,
+        gender: contact.gender ?? null,
+        phone: contact.phone ?? null,
+      },
+      contact.id
+    )
+    return () => {
+      clearCustomerContext()
+    }
+  }, [contact.id, setCustomerContext, clearCustomerContext])
 
   const handleDelete = async () => {
     if (!confirm(`${contact.name}님을 삭제할까요? 되돌릴 수 없습니다.`)) return

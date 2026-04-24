@@ -23,6 +23,9 @@ interface PanelState {
   closePanel: () => void
   togglePanel: () => void
   setMode: (mode: PanelMode) => void
+  /** 고객 상세 페이지 진입 시 호출 — 패널 열림 여부와 무관하게 고객 정보 세팅 */
+  setCustomerContext: (vars: CustomerVars, customerId?: string) => void
+  clearCustomerContext: () => void
 }
 
 export const usePanelStore = create<PanelState>((set, get) => ({
@@ -50,4 +53,8 @@ export const usePanelStore = create<PanelState>((set, get) => ({
     }
   },
   setMode: (mode) => set({ mode }),
+  setCustomerContext: (vars, customerId) =>
+    set({ targetCustomerVars: vars, targetCustomerName: vars.name, targetCustomerId: customerId }),
+  clearCustomerContext: () =>
+    set({ targetCustomerVars: undefined, targetCustomerName: undefined, targetCustomerId: undefined }),
 }))
