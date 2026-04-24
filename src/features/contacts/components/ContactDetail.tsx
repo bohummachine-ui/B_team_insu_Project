@@ -47,7 +47,18 @@ export default function ContactDetail({ contact, userRole }: Props) {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => openPanel('templates', { customerId: contact.id, customerName: contact.name })}
+            onClick={() => openPanel('templates', {
+              customerId: contact.id,
+              customerName: contact.name,
+              customerVars: {
+                name: contact.name,
+                age: calcAge(contact.birthday),
+                job: contact.job ?? null,
+                jobDetail: contact.job_detail ?? null,
+                gender: contact.gender ?? null,
+                phone: contact.phone ?? null,
+              },
+            })}
             className="btn-secondary text-sm py-2 px-4"
             title="단축키 ]"
           >

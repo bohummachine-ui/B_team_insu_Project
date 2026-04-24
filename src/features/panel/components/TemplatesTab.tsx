@@ -22,7 +22,7 @@ const CATEGORIES: { value: CategoryFilter; label: string }[] = [
 ]
 
 export default function TemplatesTab() {
-  const { targetCustomerName } = usePanelStore()
+  const { targetCustomerName, targetCustomerVars } = usePanelStore()
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [search, setSearch] = useState('')
   const { data: templates = [], isLoading } = useTemplates({
@@ -31,13 +31,16 @@ export default function TemplatesTab() {
   })
   const toast = useCopyToast()
 
+  // customerVars가 있으면 전체 변수 치환, 없으면 이름만
+  const vars = targetCustomerVars ?? targetCustomerName
+
   const withPreview = useMemo(
     () =>
       templates.map((t) => ({
         ...t,
-        preview: substituteVars(t.body, targetCustomerName),
+        preview: substituteVars(t.body, vars),
       })),
-    [templates, targetCustomerName]
+    [templates, vars]
   )
 
   const handleCopy = async (id: string, previewText: string) => {
@@ -72,11 +75,18 @@ export default function TemplatesTab() {
             </button>
           ))}
         </div>
-        {targetCustomerName && (
+        {targetCustomerVars ? (
           <p className="text-xs text-blue-600">
-            변수 치환 미리보기: <span className="font-semibold">{targetCustomerName}</span>
+            변수 치환:
+            <span className="font-semibold ml-1">{targetCustomerVars.name}</span>
+            {targetCustomerVars.age !== null && <span className="ml-1">{targetCustomerVars.age}세</span>}
+            {targetCustomerVars.job && <span className="ml-1">· {targetCustomerVars.job}</span>}
           </p>
-        )}
+        ) : targetCustomerName ? (
+          <p className="text-xs text-blue-600">
+            변수 치환: <span className="font-semibold">{targetCustomerName}</span>
+          </p>
+        ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
