@@ -18,6 +18,7 @@ type TeamsRow = {
 type UsersRow = {
   id: string; email: string; name: string | null; status: UserStatus; role: UserRole
   team_id: string | null; profile_image_url: string | null; google_refresh_token: string | null
+  gemini_key_secret_id: string | null
   approved_at: string | null; approved_by_user_id: string | null; last_login_at: string | null
   created_at: string
 }
@@ -55,10 +56,17 @@ type ImageAssetsRow = {
   storage_path: string; thumbnail_path: string | null; file_size: number | null
   is_shared: boolean; use_count: number; created_at: string
 }
+export type TranscriptStatus = 'pending' | 'processing' | 'done' | 'failed'
+
 type RecordingsRow = {
   id: string; team_id: string; owner_user_id: string; title: string; duration: number | null
   drive_file_id: string | null; drive_share_link: string | null; consent_confirmed: boolean
   is_shared: boolean; created_at: string
+  transcript: string | null
+  transcript_status: TranscriptStatus
+  transcript_model: string | null
+  transcript_error: string | null
+  transcribed_at: string | null
 }
 type CaseStudiesRow = {
   id: string; team_id: string; owner_user_id: string; title: string; body: string
@@ -161,7 +169,17 @@ export interface Database {
       }
       recordings: {
         Row: RecordingsRow
-        Insert: Omit<RecordingsRow, 'id' | 'created_at'>
+        Insert: Omit<
+          RecordingsRow,
+          'id' | 'created_at' | 'transcript' | 'transcript_status'
+          | 'transcript_model' | 'transcript_error' | 'transcribed_at'
+        > & {
+          transcript?: string | null
+          transcript_status?: TranscriptStatus
+          transcript_model?: string | null
+          transcript_error?: string | null
+          transcribed_at?: string | null
+        }
         Update: Partial<Omit<RecordingsRow, 'id' | 'created_at'>>
         Relationships: []
       }
@@ -208,7 +226,24 @@ export interface Database {
         Relationships: []
       }
     }
-    Functions: Record<string, never>
+    Functions: {
+      set_user_gemini_key: {
+        Args: { p_key: string }
+        Returns: void
+      }
+      delete_user_gemini_key: {
+        Args: Record<string, never>
+        Returns: void
+      }
+      get_user_gemini_key: {
+        Args: { p_user_id: string }
+        Returns: string | null
+      }
+      has_user_gemini_key: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

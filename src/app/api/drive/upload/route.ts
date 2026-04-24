@@ -18,6 +18,23 @@ function jsonError(code: DriveUploadError['error'], message: string, status: num
   return NextResponse.json<DriveUploadError>({ error: code, message }, { status })
 }
 
+function triggerTranscribe(req: Request, recordingId: string): void {
+  // 동일 오리진에서 내부 호출. 세션 쿠키를 그대로 전달해야 session.user.id가 조회됨.
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
+    new URL(req.url).origin
+  const url = `${origin}/api/recordings/${recordingId}/transcribe`
+  const cookie = req.headers.get('cookie') ?? ''
+
+  // fire-and-forget: 응답을 기다리지 않음. 에러는 transcript_status='failed'로 DB에 기록됨.
+  fetch(url, {
+    method: 'POST',
+    headers: cookie ? { cookie } : {},
+  }).catch((err) => {
+    console.warn('[drive/upload] transcribe trigger failed', err)
+  })
+}
+
 export async function POST(req: Request) {
   const supabase = createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
@@ -90,6 +107,11 @@ export async function POST(req: Request) {
       fileName: file.name,
       sizeBytes: file.size,
     }
+
+    // Design Ref: §4.6 — 업로드 성공 직후 STT fire-and-forget 트리거
+    // Plan SC-1: 사용자 추가 조작 없이 자동 STT 시작
+    // 20MB 초과 파일이라도 호출은 함 (transcribe route에서 file_too_large로 실패 처리)
+    triggerTranscribe(req, result.recordingId)
 
     console.info('[drive/upload] success', { userId, recordingId: result.recordingId })
     return NextResponse.json(result, { status: 201 })

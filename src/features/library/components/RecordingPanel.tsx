@@ -15,7 +15,7 @@ import { useContacts } from '@/features/contacts/hooks/useContacts'
 import type { Recording } from '@/types'
 import type { DriveUploadError } from '@/types/drive'
 import { MAX_UPLOAD_BYTES } from '@/types/drive'
-import ShareBadge from './ShareBadge'
+import RecordingCard from './RecordingCard'
 import ReloginBanner from '@/components/auth/ReloginBanner'
 import Toast from '@/features/panel/components/Toast'
 import { useCopyToast } from '@/features/panel/hooks/useCopyToast'
@@ -101,26 +101,13 @@ export default function RecordingPanel() {
 
       <div className="space-y-2">
         {data?.map((r) => (
-          <div key={r.id} className="card">
-            <div className="flex items-start justify-between gap-2">
-              <button onClick={() => setEditing(r)} className="flex-1 text-left">
-                <h3 className="font-bold text-gray-900">🎙️ {r.title}</h3>
-                <div className="text-xs text-gray-500 mt-1">
-                  {r.duration
-                    ? `${Math.floor(r.duration / 60)}분 ${r.duration % 60}초`
-                    : '길이 미지정'}
-                  {r.drive_share_link && (
-                    <span className="ml-2 text-primary">• Drive 링크 있음</span>
-                  )}
-                </div>
-              </button>
-              <ShareBadge
-                isShared={r.is_shared}
-                onToggle={() => setShared.mutate({ id: r.id, isShared: !r.is_shared })}
-                disabled={setShared.isPending}
-              />
-            </div>
-          </div>
+          <RecordingCard
+            key={r.id}
+            recording={r}
+            onOpen={() => setEditing(r)}
+            onToggleShared={() => setShared.mutate({ id: r.id, isShared: !r.is_shared })}
+            toggleSharedDisabled={setShared.isPending}
+          />
         ))}
       </div>
     </div>
@@ -241,7 +228,7 @@ function UploadForm({ onDone }: { onDone: () => void }) {
           className="w-4 h-4 mt-0.5"
         />
         <span className="text-sm text-gray-800">
-          고객의 녹음 동의를 받았음을 확인합니다. *
+          고객의 녹음 동의를 받았으며, 본 파일이 텍스트 변환을 위해 Google Gemini API로 전송됨에 동의합니다. *
         </span>
       </label>
 
@@ -368,7 +355,7 @@ function RecordingForm({
             className="w-4 h-4 mt-0.5"
           />
           <span className="text-sm text-gray-800">
-            고객의 녹음 동의를 받았음을 확인합니다. *
+            고객의 녹음 동의를 받았으며, 본 파일이 텍스트 변환을 위해 Google Gemini API로 전송됨에 동의합니다. *
           </span>
         </label>
 

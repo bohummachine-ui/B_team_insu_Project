@@ -3,6 +3,7 @@
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { authService } from '@/features/auth/services/authService'
+import GeminiKeyCard from '@/features/profile/components/GeminiKeyCard'
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth()
@@ -50,6 +51,8 @@ export default function SettingsPage() {
           )}
         </dl>
       </section>
+
+      <GeminiKeyCard />
 
       <section className="bg-white rounded-toss border border-gray-100 p-6 mb-4">
         <h2 className="font-semibold text-gray-900 mb-2">알림</h2>
