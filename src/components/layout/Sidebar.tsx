@@ -120,7 +120,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="group/sidebar fixed left-0 top-0 bottom-0 z-40 bg-white border-r border-gray-100 flex flex-col overflow-hidden transition-[width] duration-200 ease-out hover:shadow-lg"
+      className="group/sidebar fixed left-0 top-0 bottom-0 z-20 bg-white border-r border-gray-100 flex flex-col overflow-hidden transition-[width] duration-200 ease-out hover:shadow-lg"
       style={{
         width: 'var(--sidebar-width)',
         paddingTop: 'var(--header-height)',
