@@ -204,7 +204,7 @@ function TemplateForm({
         </label>
 
         <label className="block">
-          <span className="text-sm text-gray-600">본문 * (변수: {'{고객명}, {나이}, {직업}'})</span>
+          <span className="text-sm text-gray-600">본문 * (변수 예시: {'{고객명} · {나이} · {직업} · {성별} · {전화번호}'})</span>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}

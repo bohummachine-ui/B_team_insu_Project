@@ -7,7 +7,8 @@ import { templateService } from '@/features/library/services'
 import { TEMPLATE_CATEGORY_LABEL } from '@/types'
 import type { TemplateCategory } from '@/types/database.types'
 import { usePanelStore } from '@/store/panelStore'
-import { copyText, substituteVars } from '../utils/clipboard'
+import { copyText } from '../utils/clipboard'
+import { renderTemplate } from '@/features/library/utils/renderTemplate'
 import { useCopyToast } from '../hooks/useCopyToast'
 import Toast from './Toast'
 
@@ -31,16 +32,38 @@ export default function TemplatesTab() {
   })
   const toast = useCopyToast()
 
-  // customerVars가 있으면 전체 변수 치환, 없으면 이름만
-  const vars = targetCustomerVars ?? targetCustomerName
+  // renderTemplate에 넘길 변수 맵 구성
+  // 지원 변수: {고객명} {고객} {이름} {나이} {직업} {상세직업} {성별} {전화} {전화번호}
+  const templateVars = useMemo(() => {
+    if (targetCustomerVars) {
+      const genderLabel = targetCustomerVars.gender === 'M' ? '남' : targetCustomerVars.gender === 'F' ? '여' : ''
+      return {
+        고객명: targetCustomerVars.name,
+        고객: targetCustomerVars.name,
+        이름: targetCustomerVars.name,
+        성함: targetCustomerVars.name,
+        나이: targetCustomerVars.age ?? '',
+        직업: targetCustomerVars.job ?? '',
+        상세직업: targetCustomerVars.jobDetail ?? targetCustomerVars.job ?? '',
+        직업상세: targetCustomerVars.jobDetail ?? targetCustomerVars.job ?? '',
+        성별: genderLabel,
+        전화: targetCustomerVars.phone ?? '',
+        전화번호: targetCustomerVars.phone ?? '',
+      }
+    }
+    if (targetCustomerName) {
+      return { 고객명: targetCustomerName, 고객: targetCustomerName, 이름: targetCustomerName, 성함: targetCustomerName }
+    }
+    return {}
+  }, [targetCustomerVars, targetCustomerName])
 
   const withPreview = useMemo(
     () =>
       templates.map((t) => ({
         ...t,
-        preview: substituteVars(t.body, vars),
+        preview: renderTemplate(t.body, templateVars),
       })),
-    [templates, vars]
+    [templates, templateVars]
   )
 
   const handleCopy = async (id: string, previewText: string) => {
