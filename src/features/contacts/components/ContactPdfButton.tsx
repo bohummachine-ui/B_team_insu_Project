@@ -4,29 +4,18 @@
 import dynamic from 'next/dynamic'
 import type { ContactWithLabels } from '@/types'
 
-// react-pdf는 SSR 비호환 — dynamic import 필수
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
+// PDFDownloadLink + ContactPdfDocument를 단일 dynamic import로 묶음
+// 이유: 두 import를 별도로 dynamic 로드하면 PDFDownloadLink가 먼저 준비됐을 때
+//       ContactPdfDocument가 아직 null을 반환 → react-pdf toBlob 크래시
+const ContactPdfButtonInner = dynamic(
+  () => import('./ContactPdfButtonInner'),
   { ssr: false, loading: () => <span className="btn-secondary text-sm py-2 px-4 opacity-50">PDF 준비...</span> }
 )
-const ContactPdfDocument = dynamic(() => import('./ContactPdfDocument'), { ssr: false })
 
 interface Props {
   contact: ContactWithLabels
 }
 
 export default function ContactPdfButton({ contact }: Props) {
-  const fileName = `${contact.name}_상담자료_${new Date().toISOString().slice(0, 10)}.pdf`
-
-  return (
-    <PDFDownloadLink
-      document={<ContactPdfDocument contact={contact} />}
-      fileName={fileName}
-      className="btn-secondary text-sm py-2 px-4"
-    >
-      {({ loading, error }) =>
-        error ? 'PDF 오류' : loading ? 'PDF 생성 중...' : '인쇄용 자료 / PDF'
-      }
-    </PDFDownloadLink>
-  )
+  return <ContactPdfButtonInner contact={contact} />
 }
