@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { Contact } from '@/types'
 import { calcAge } from '../utils/maskContact'
 
@@ -11,6 +11,7 @@ interface Props {
 }
 
 export default function ContactList({ contacts, selectedIds, onSelect }: Props) {
+  const router = useRouter()
   return (
     <div className="card p-0 overflow-hidden">
       <table className="w-full text-sm">
@@ -28,13 +29,23 @@ export default function ContactList({ contacts, selectedIds, onSelect }: Props) 
         <tbody>
           {contacts.map((contact) => {
             const age = calcAge(contact.birthday)
+            const goDetail = () => router.push(`/contacts/${contact.id}`)
             return (
               <tr
                 key={contact.id}
-                className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                onClick={goDetail}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    goDetail()
+                  }
+                }}
+                tabIndex={0}
+                role="link"
+                className="border-b border-gray-50 hover:bg-gray-50 focus:bg-gray-50 outline-none cursor-pointer transition-colors"
               >
                 {onSelect && (
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedIds?.has(contact.id) ?? false}
@@ -49,12 +60,7 @@ export default function ContactList({ contacts, selectedIds, onSelect }: Props) 
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/contacts/${contact.id}`}
-                    className="font-medium text-gray-900 hover:text-primary"
-                  >
-                    {contact.name}
-                  </Link>
+                  <span className="font-medium text-gray-900">{contact.name}</span>
                 </td>
                 <td className="px-4 py-3 text-gray-600">{contact.phone}</td>
                 <td className="px-4 py-3 text-gray-600">
